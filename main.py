@@ -6,23 +6,24 @@ from scipy.misc import imread, imresize
 def read_images(path):
 	img = imread(path)
 	img = imresize(img,(224,224))
+	img = img[None,]
 #	print "read-images",img.dtype
 	return img
 
 
-def conv_layers(img,sess,flag = False):
+def conv_layers(img,flag = False):
 	"""
 	given img, return the corresponding content_layer(tensor),style_layers(list of tensors)
 	"""
 #	print img.get_shape()
-	img = img[None,]
-	#if flag == True:
-	#	img = tf.Variable(img,dtype = tf.float32,trainable = True)
-	#else:
-	if flag == False:
+	
+	if flag == True:
+		img = tf.Variable(img,dtype = tf.float32,trainable = True)
+	else:
+	# if flag == False:
 		img = tf.constant(img,dtype = tf.float32)
 
-	vgg_img = vgg16(img,'vgg16_weights.npz',sess)
+	vgg_img = vgg16(img, weight_file = 'vgg16_weights.npz')
 	content_layer = vgg_img.conv4_2
 	style_layers = [vgg_img.conv1_1,vgg_img.conv2_1,vgg_img.conv3_1,vgg_img.conv4_1,vgg_img.conv5_1]
 	return content_layer,style_layers
@@ -54,9 +55,9 @@ def style_loss(img_style_layers,style_img_layers):
 		loss += tf.nn.l2_loss(gram_img-gram_style)/(4*num_filter**2*size_matrix**2)
 	return loss
 
-def train(loss_,learning_rate,sess):
+def train(loss_,learning_rate):
 	tf.summary.scalar('loss',loss_)
-	sess.run(tf.initialize_all_variables())
+	# sess.run(tf.initialize_all_variables())
 #	global_step = tf.Variable(0,name = 'global_step', trainable=False)
 	optimizer = tf.train.AdamOptimizer(learning_rate,beta1 = 0.9,beta2 = 0.999,epsilon = 1e-08)
 
@@ -90,30 +91,28 @@ def modify(img,sess):
 
 def run(content_path = 'cat.jpg',style_path = 'stary_night.jpg'):
 	content_img = read_images(content_path)
-	print "run",content_img.shape
 	style_img = read_images(style_path)
-	print style_img.shape
 	img =np.random.normal(0,10**(-3),content_img.shape)
 	num_iter = 20
-	with tf.device("/gpu:0"), tf.Session() as sess:
+	with tf.Session() as sess:
 		img = tf.Variable(img,dtype = tf.float32,trainable = True)
 #		img =tf.Variable(style_img,dtype = tf.float32,trainable = True)
-		sess.run(tf.global_variables_initializer())
-		content_img_layer,_ = conv_layers(content_img,sess)
-		_,style_img_layers = conv_layers(style_img,sess)
-		img_content_layer,img_style_layers = conv_layers(img,sess,flag = True)
+		content_img_layer,_ = conv_layers(content_img)
+		_,style_img_layers = conv_layers(style_img)
+		img_content_layer,img_style_layers = conv_layers(img,flag = True)
 		loss_ = loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers)
 		train_step = train(loss_,10**(-5),sess)
+		sess.run(tf.global_variables_initializer())
 
 		for i in range(3):
 			print "i",i
 			print "loss",sess.run(loss_)
-			sess.run(img)
-			print "+++++===========+++++++++"
-			print modify(img,sess)
-			sess.run(img.assign(modify(img,sess)))
-			print "aftermodif***************************88y"
-			img_content_layer,img_style_layers = conv_layers(img,sess,flag = True)
+			# sess.run(img)
+			# print "+++++===========+++++++++"
+			# print modify(img,sess)
+			# sess.run(img.assign(modify(img,sess)))
+			# print "aftermodif***************************88y"
+			# img_content_layer,img_style_layers = conv_layers(img,sess,flag = True)
 			print sess.run(img)
 			print "####################################"
 			sess.run([train_step,loss_])
