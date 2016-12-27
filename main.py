@@ -2,11 +2,14 @@ import numpy as np
 import tensorflow as tf 
 from vgg16 import vgg16
 from scipy.misc import imread, imresize
+import matplotlib.pyplot as plt
+
 
 def read_images(path):
 	img = imread(path)
 	img = imresize(img,(224,224))
 	img = img[None,]
+	img = img.astype(float)
 #	print "read-images",img.dtype
 	return img
 
@@ -18,10 +21,10 @@ def conv_layers(img,flag = False):
 #	print img.get_shape()
 	
 	if flag == True:
-		img = tf.Variable(img,dtype = tf.float32,trainable = True)
-	else:
+		img = tf.Variable(img, dtype = tf.float32,trainable = True)
+	# else:
 	# if flag == False:
-		img = tf.constant(img,dtype = tf.float32)
+		# img = tf.constant(img,dtype = tf.float32)
 
 	vgg_img = vgg16(img, weight_file = 'vgg16_weights.npz')
 	content_layer = vgg_img.conv4_2
@@ -59,7 +62,7 @@ def train(loss_,learning_rate):
 	tf.summary.scalar('loss',loss_)
 	# sess.run(tf.initialize_all_variables())
 #	global_step = tf.Variable(0,name = 'global_step', trainable=False)
-	optimizer = tf.train.AdamOptimizer(learning_rate,beta1 = 0.9,beta2 = 0.999,epsilon = 1e-08)
+	optimizer = tf.train.AdamOptimizer(learning_rate, beta1 = 0.9,beta2 = 0.999,epsilon = 1e-08)
 
 	#learning_rate = tf.train.exponential_decay(learning_rate=2.0, global_step=global_step, decay_steps=100, decay_rate=0.94, staircase=True)
 	#train_step =optimizer.minimize(loss_, global_step=global_step)
@@ -95,16 +98,17 @@ def run(content_path = 'cat.jpg',style_path = 'stary_night.jpg'):
 	img =np.random.normal(0,10**(-3),content_img.shape)
 	num_iter = 20
 	with tf.Session() as sess:
-		img = tf.Variable(img,dtype = tf.float32,trainable = True)
-#		img =tf.Variable(style_img,dtype = tf.float32,trainable = True)
-		content_img_layer,_ = conv_layers(content_img)
-		_,style_img_layers = conv_layers(style_img)
-		img_content_layer,img_style_layers = conv_layers(img,flag = True)
+		# img = tf.Variable(img, dtype = tf.float32,trainable = True)
+		img =tf.Variable(style_img,dtype = tf.float32,trainable = True)
+		content_img_layer,_ = conv_layers(content_img,flag = True)
+		_,style_img_layers = conv_layers(style_img,flag = True)
+		img_content_layer,img_style_layers = conv_layers(img,flag = False)
 		loss_ = loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers)
-		train_step = train(loss_,10**(-5),sess)
-		sess.run(tf.global_variables_initializer())
-
-		for i in range(3):
+		train_step = train(loss_,10**(-5))
+		init = tf.global_variables_initializer()
+		sess.run(init)
+		# print sess.run(img)
+		for i in range(1):
 			print "i",i
 			print "loss",sess.run(loss_)
 			# sess.run(img)
@@ -113,11 +117,12 @@ def run(content_path = 'cat.jpg',style_path = 'stary_night.jpg'):
 			# sess.run(img.assign(modify(img,sess)))
 			# print "aftermodif***************************88y"
 			# img_content_layer,img_style_layers = conv_layers(img,sess,flag = True)
-			print sess.run(img)
-			print "####################################"
+			# print sess.run(img)
 			sess.run([train_step,loss_])
-			print sess.run(img)
-
+			#print sess.run(img)
+		B = sess.run(img)
+	plt.imshow(B[0,:,:,:])
+	plt.show()
 run()
 
 
