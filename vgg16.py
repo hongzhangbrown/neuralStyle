@@ -250,10 +250,10 @@ class vgg16:
             # print i, k, np.shape(weights[k])
             # sess.run(self.parameters[i].assign(weights[k]))
 
-if __name__ == '__main__':
-    sess = tf.Session()
-    imgs = tf.placeholder(tf.float32, [None, 224, 224, 3])
-    vgg = vgg16(imgs, 'vgg16_weights.npz', sess)
+# if __name__ == '__main__':
+#     sess = tf.Session()
+#     imgs = tf.placeholder(tf.float32, [None, 224, 224, 3])
+#     vgg = vgg16(imgs, 'vgg16_weights.npz', sess)
 
     # img1 = imread('tofu.jpg', mode='RGB')
     # img1 = imresize(img1, (224, 224))

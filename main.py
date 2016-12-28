@@ -17,6 +17,7 @@ def read_images(path):
 def conv_layers(img,flag = False):
 	"""
 	given img, return the corresponding content_layer(tensor),style_layers(list of tensors)
+	set the tensor to be untrainable if it is the reference image
 	"""
 #	print img.get_shape()
 	
@@ -33,11 +34,18 @@ def conv_layers(img,flag = False):
 
 
 def content_loss(img_content_layer,content_img_layer):
+	"""
+	compute content loss from conv4_4
+	"""
 	content_loss_op = tf.nn.l2_loss(img_content_layer-content_img_layer)
 	return content_loss_op
 
 
 def gram_one_layer(one_layer):
+	"""
+	compute matrix.T dot matrix
+	"""
+	
 	one_layer_dim = np.array(one_layer.get_shape().as_list())
 	num_filter = one_layer_dim[-1]
 	one_layer = tf.transpose(one_layer,[3,0,1,2])
@@ -48,6 +56,9 @@ def gram_one_layer(one_layer):
 
 
 def style_loss(img_style_layers,style_img_layers):
+	"""
+	compute style loss
+	"""
 	num_layers = len(style_img_layers)
 	loss = 0
 	for i in xrange(num_layers):
@@ -58,7 +69,14 @@ def style_loss(img_style_layers,style_img_layers):
 		loss += tf.nn.l2_loss(gram_img-gram_style)/(4*num_filter**2*size_matrix**2)
 	return loss
 
+<<<<<<< HEAD
 def train(loss_):
+=======
+def train(loss_,learning_rate):
+	"""
+	train the model using adamoptimizer
+	"""
+>>>>>>> 6dd0a5cfeb11cc37e2cf8b98dbcf2d11d738cf64
 	tf.summary.scalar('loss',loss_)
 	# sess.run(tf.initialize_all_variables())
 	global_step = tf.Variable(0,name = 'global_step', trainable=False)
@@ -72,6 +90,9 @@ def train(loss_):
 
 
 def loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers):
+	"""
+	combine content loss and style loss
+	"""
 	l1 = content_loss(img_content_layer,content_img_layer)
 	l2 = style_loss(img_style_layers,style_img_layers)
 	alpha = 1 
@@ -79,21 +100,29 @@ def loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers):
 	loss_ = alpha*l1+beta*l2
 	return loss_
 
-def modify(img,sess):
-	matrix = sess.run(img)
-	shape = matrix.shape
-	flat  =np.array(matrix.flat)
-	flat[flat<0] = 0
-	flat[flat>255] = 255
-	matrix_ = np.reshape(flat,shape)
-	return matrix_
+# def modify(img,sess):
+# 	matrix = sess.run(img)
+# 	shape = matrix.shape
+# 	flat  =np.array(matrix.flat)
+# 	flat[flat<0] = 0
+# 	flat[flat>255] = 255
+# 	matrix_ = np.reshape(flat,shape)
+# 	return matrix_
 	
 
 
 
 
 
+<<<<<<< HEAD
 def run(content_path = 'providence.jpg',style_path = 'stary_night.jpg'):
+=======
+def run(content_path = 'cat.jpg',style_path = 'stary_night.jpg'):
+	"""
+	compute the target image with random initialization
+	"""
+	
+>>>>>>> 6dd0a5cfeb11cc37e2cf8b98dbcf2d11d738cf64
 	content_img = read_images(content_path)
 	style_img = read_images(style_path)
 	img =np.random.normal(0,10**(-3),content_img.shape)
@@ -113,6 +142,10 @@ def run(content_path = 'providence.jpg',style_path = 'stary_night.jpg'):
 			print "i",i
 			print "loss",sess.run(loss_)
 			sess.run(train_step)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6dd0a5cfeb11cc37e2cf8b98dbcf2d11d738cf64
 	
 		image = sess.run(img)[0]+mean
 		image = image.astype('uint8')
