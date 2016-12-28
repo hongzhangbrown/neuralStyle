@@ -58,7 +58,7 @@ def style_loss(img_style_layers,style_img_layers):
 		loss += tf.nn.l2_loss(gram_img-gram_style)/(4*num_filter**2*size_matrix**2)
 	return loss
 
-def train(loss_,learning_rate):
+def train(loss_):
 	tf.summary.scalar('loss',loss_)
 	# sess.run(tf.initialize_all_variables())
 	global_step = tf.Variable(0,name = 'global_step', trainable=False)
@@ -74,8 +74,8 @@ def train(loss_,learning_rate):
 def loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers):
 	l1 = content_loss(img_content_layer,content_img_layer)
 	l2 = style_loss(img_style_layers,style_img_layers)
-	alpha = 1
-	beta = 0
+	alpha = 1 
+	beta = 0.001
 	loss_ = alpha*l1+beta*l2
 	return loss_
 
@@ -93,43 +93,30 @@ def modify(img,sess):
 
 
 
-def run(content_path = 'cat.jpg',style_path = 'stary_night.jpg'):
+def run(content_path = 'providence.jpg',style_path = 'stary_night.jpg'):
 	content_img = read_images(content_path)
 	style_img = read_images(style_path)
 	img =np.random.normal(0,10**(-3),content_img.shape)
-	num_iter =10 
+	num_iter =2000 
 	g = tf.Graph()
-	with g.device("/gpu:0"),g.as_default(),tf.Session(graph = g,config = tf.ConfigProto(allow_soft_placement=True)) as sess:
+	with g.device("/cpu:0"),g.as_default(),tf.Session(graph = g,config = tf.ConfigProto(allow_soft_placement=True)) as sess:
 		img = tf.Variable(img, dtype = tf.float32,trainable = True)
 		# img =tf.Variable(style_img,dtype = tf.float32,trainable = True)
-		content_img_layer,_ = conv_layers(style_img,flag = True)
-		# _,style_img_layers = conv_layers(style_img,flag = True)
+		content_img_layer,_ = conv_layers(content_img,flag = True)
+		_,style_img_layers = conv_layers(style_img,flag = True)
 		img_content_layer,img_style_layers = conv_layers(img,flag = False)
-		loss_ = content_loss(img_content_layer,content_img_layer)
-		# loss_ = loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers)
-		train_step = train(loss_,10**(-5))
+		loss_ = loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers)
+		train_step = train(loss_)
 		init = tf.global_variables_initializer()
 		sess.run(init)	
-#		plt.imshow(sess.run(img)[0])
-#		plt.show()
-		print sess.run(content_img_layer)
-
-
-		# print sess.run(img)
-		for i in xrange(10):
+		for i in xrange(num_iter):
 			print "i",i
-			# print sess.run(content_img_layer)
-
 			print "loss",sess.run(loss_)
 			sess.run(train_step)
-			print "##################################"
-
-			print sess.run(img_content_layer)
 	
 		image = sess.run(img)[0]+mean
-		print image
 		image = image.astype('uint8')
-		imsave("trained_imagei.jpg",image)	
+		imsave("trained_image.jpg",image)	
 	#plt.imshow(B)
 	#plt.show()
 if __name__=="__main__":
