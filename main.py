@@ -21,7 +21,7 @@ def conv_layers(img,flag = False):
 #	print img.get_shape()
 	
 	if flag == True:
-		img = tf.Variable(img, dtype = tf.float32,trainable = True)
+		img = tf.Variable(img, dtype = tf.float32,trainable = False)
 	# else:
 	# if flag == False:
 		# img = tf.constant(img,dtype = tf.float32)
@@ -50,7 +50,7 @@ def gram_one_layer(one_layer):
 def style_loss(img_style_layers,style_img_layers):
 	num_layers = len(style_img_layers)
 	loss = 0
-	for i in range(num_layers):
+	for i in xrange(num_layers):
 		img_one_layer = img_style_layers[i]
 		style_img_one_layer = style_img_layers[i]
 		gram_img,num_filter,size_matrix = gram_one_layer(img_one_layer)
@@ -62,7 +62,7 @@ def train(loss_,learning_rate):
 	tf.summary.scalar('loss',loss_)
 	# sess.run(tf.initialize_all_variables())
 	global_step = tf.Variable(0,name = 'global_step', trainable=False)
-	learning_rate = tf.train.exponential_decay(learning_rate =0.01,global_step = global_step,decay_steps = 10,decay_rate = 0.94,staircase = True)
+	learning_rate = tf.train.exponential_decay(learning_rate =2.0,global_step = global_step,decay_steps = 10,decay_rate = 0.94,staircase = True)
 	optimizer = tf.train.AdamOptimizer(learning_rate, beta1 = 0.9,beta2 = 0.999,epsilon = 1e-08)
 
 	#learning_rate = tf.train.exponential_decay(learning_rate=2.0, global_step=global_step, decay_steps=100, decay_rate=0.94, staircase=True)
@@ -75,7 +75,7 @@ def loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers):
 	l1 = content_loss(img_content_layer,content_img_layer)
 	l2 = style_loss(img_style_layers,style_img_layers)
 	alpha = 1
-	beta = 1
+	beta = 0
 	loss_ = alpha*l1+beta*l2
 	return loss_
 
@@ -101,25 +101,35 @@ def run(content_path = 'cat.jpg',style_path = 'stary_night.jpg'):
 	g = tf.Graph()
 	with g.device("/gpu:0"),g.as_default(),tf.Session(graph = g,config = tf.ConfigProto(allow_soft_placement=True)) as sess:
 		img = tf.Variable(img, dtype = tf.float32,trainable = True)
-#		img =tf.Variable(content_img,dtype = tf.float32,trainable = True)
-		content_img_layer,_ = conv_layers(content_img,flag = True)
-		_,style_img_layers = conv_layers(style_img,flag = True)
+		# img =tf.Variable(style_img,dtype = tf.float32,trainable = True)
+		content_img_layer,_ = conv_layers(style_img,flag = True)
+		# _,style_img_layers = conv_layers(style_img,flag = True)
 		img_content_layer,img_style_layers = conv_layers(img,flag = False)
-		loss_ = loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers)
+		loss_ = content_loss(img_content_layer,content_img_layer)
+		# loss_ = loss(img_content_layer,img_style_layers,content_img_layer,style_img_layers)
 		train_step = train(loss_,10**(-5))
 		init = tf.global_variables_initializer()
 		sess.run(init)	
 #		plt.imshow(sess.run(img)[0])
 #		plt.show()
+		print sess.run(content_img_layer)
+
 
 		# print sess.run(img)
-		for i in xrange(num_iter):
+		for i in xrange(10):
 			print "i",i
+			# print sess.run(content_img_layer)
+
 			print "loss",sess.run(loss_)
-			sess.run([train_step,loss_])
+			sess.run(train_step)
+			print "##################################"
+
+			print sess.run(img_content_layer)
+	
 		image = sess.run(img)[0]+mean
+		print image
 		image = image.astype('uint8')
-	imsave("trained_imagei.jpg",image)	
+		imsave("trained_imagei.jpg",image)	
 	#plt.imshow(B)
 	#plt.show()
 if __name__=="__main__":
